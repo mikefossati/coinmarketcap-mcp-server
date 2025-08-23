@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  coinmarketcap-mcp-server:
+    build: .
+    container_name: coinmarketcap-mcp
+    environment:
+      - NODE_ENV=production
+      - CMC_API_KEY=${CMC_API_KEY}
+      - CMC_BASE_URL=${CMC_BASE_URL:-https://pro-api.coinmarketcap.com}
+      - PORT=${PORT:-3000}
+      - CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS:-300}
+      - CACHE_MAX_KEYS=${CACHE_MAX_KEYS:-1000}
+      - RATE_LIMIT_REQUESTS_PER_MINUTE=${RATE_LIMIT_REQUESTS_PER_MINUTE:-100}
+      - RATE_LIMIT_BURST_SIZE=${RATE_LIMIT_BURST_SIZE:-10}
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mcp-network
+
+  # Optional: Redis for distributed caching (if scaling horizontally)
+  redis:
+    image: redis:7-alpine
+    container_name: coinmarketcap-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - mcp-network
+    profiles:
+      - redis # Only start with --profile redis
+
+  # Optional: Monitoring with Prometheus and Grafana
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: coinmarketcap-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    restart: unless-stopped
+    networks:
+      - mcp-network
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: coinmarketcap-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    restart: unless-stopped
+    networks:
+      - mcp-network
+    profiles:
+      - monitoring
+
+networks:
+  mcp-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:

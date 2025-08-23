@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "coinmarketcap": {
+      "command": "node",
+      "args": [
+        "/Users/mike/dev/coinmk-mcp/coinmarketcap-mcp-server/dist/index.js"
+      ],
+      "env": {
+        "CMC_API_KEY": "your_coinmarketcap_pro_api_key_here"
+      }
+    }
+  }
+}
