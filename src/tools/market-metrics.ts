@@ -6,7 +6,7 @@ import { MarketMetrics } from '../types/index.js';
 export class MarketMetricsTools {
   constructor(
     private client: CoinMarketCapClient,
-    private cache: CacheManager
+    private cache: CacheManager,
   ) {}
 
   getTools(): Tool[] {
@@ -144,18 +144,18 @@ export class MarketMetricsTools {
 
   async handleToolCall(name: string, args: any): Promise<any> {
     switch (name) {
-      case 'get_market_overview':
-        return this.getMarketOverview(args);
-      case 'get_market_dominance':
-        return this.getMarketDominance(args);
-      case 'analyze_altcoin_season':
-        return this.analyzeAltcoinSeason(args);
-      case 'get_trending_cryptocurrencies':
-        return this.getTrendingCryptocurrencies(args);
-      case 'get_gainers_losers':
-        return this.getGainersLosers(args);
-      default:
-        throw new Error(`Unknown tool: ${name}`);
+    case 'get_market_overview':
+      return this.getMarketOverview(args);
+    case 'get_market_dominance':
+      return this.getMarketDominance(args);
+    case 'analyze_altcoin_season':
+      return this.analyzeAltcoinSeason(args);
+    case 'get_trending_cryptocurrencies':
+      return this.getTrendingCryptocurrencies(args);
+    case 'get_gainers_losers':
+      return this.getGainersLosers(args);
+    default:
+      throw new Error(`Unknown tool: ${name}`);
     }
   }
 
@@ -167,7 +167,7 @@ export class MarketMetricsTools {
     const { convert = 'USD', include_trending = true, include_gainers_losers = true } = args;
     const cacheKey = this.cache.generateCacheKey('market_overview', { convert, include_trending, include_gainers_losers });
     
-    let result = this.cache.get(cacheKey);
+    const result = this.cache.get(cacheKey);
     if (result) {
       return result;
     }
@@ -263,7 +263,7 @@ export class MarketMetricsTools {
     const { convert = 'USD', include_altcoin_analysis = true } = args;
     const cacheKey = this.cache.generateCacheKey('market_dominance', { convert, include_altcoin_analysis });
     
-    let result = this.cache.get(cacheKey);
+    const result = this.cache.get(cacheKey);
     if (result) {
       return result;
     }
@@ -317,14 +317,14 @@ export class MarketMetricsTools {
     const { 
       timeframe = '90d', 
       include_predictions = true, 
-      include_historical_comparison = false 
+      include_historical_comparison = false, 
     } = args;
     
     const cacheKey = this.cache.generateCacheKey('altcoin_season_analysis', { 
-      timeframe, include_predictions, include_historical_comparison 
+      timeframe, include_predictions, include_historical_comparison, 
     });
     
-    let result = this.cache.get(cacheKey);
+    const result = this.cache.get(cacheKey);
     if (result) {
       return result;
     }
@@ -427,7 +427,7 @@ export class MarketMetricsTools {
           positive_trending: trending.filter((coin: any) => coin.percent_change_24h > 0).length,
           negative_trending: trending.filter((coin: any) => coin.percent_change_24h < 0).length,
           top_performer: trending.reduce((max: any, coin: any) => 
-            coin.percent_change_24h > max.percent_change_24h ? coin : max, trending[0]
+            coin.percent_change_24h > max.percent_change_24h ? coin : max, trending[0],
           ),
         },
         last_updated: new Date().toISOString(),

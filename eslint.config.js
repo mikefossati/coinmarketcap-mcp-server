@@ -23,8 +23,7 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-inferrable-types': 'off',
-      '@typescript-eslint/prefer-const': 'error',
-      '@typescript-eslint/no-var-requires': 'error',
+      'prefer-const': 'error',
 
       // General JavaScript/TypeScript rules
       'no-console': 'off', // Allow console.log for server logging

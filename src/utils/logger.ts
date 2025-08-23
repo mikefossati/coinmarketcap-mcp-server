@@ -1,4 +1,6 @@
 // Centralized logging utility with configurable levels
+import { LogData } from '../types/api.js';
+
 export enum LogLevel {
   ERROR = 0,
   WARN = 1,
@@ -14,20 +16,20 @@ class CentralLogger {
     // Set log level based on environment
     const envLevel = process.env.LOG_LEVEL?.toLowerCase();
     switch (envLevel) {
-      case 'error':
-        this.level = LogLevel.ERROR;
-        break;
-      case 'warn':
-        this.level = LogLevel.WARN;
-        break;
-      case 'info':
-        this.level = LogLevel.INFO;
-        break;
-      case 'debug':
-        this.level = LogLevel.DEBUG;
-        break;
-      default:
-        this.level = process.env.NODE_ENV === 'development' || process.env.DEBUG ? LogLevel.DEBUG : LogLevel.INFO;
+    case 'error':
+      this.level = LogLevel.ERROR;
+      break;
+    case 'warn':
+      this.level = LogLevel.WARN;
+      break;
+    case 'info':
+      this.level = LogLevel.INFO;
+      break;
+    case 'debug':
+      this.level = LogLevel.DEBUG;
+      break;
+    default:
+      this.level = process.env.NODE_ENV === 'development' || process.env.DEBUG ? LogLevel.DEBUG : LogLevel.INFO;
     }
 
     this.enableColors = process.env.NO_COLOR !== '1' && process.stdout.isTTY;
@@ -37,7 +39,7 @@ class CentralLogger {
     return new Date().toISOString();
   }
 
-  private formatMessage(level: string, message: string, context?: any): string {
+  private formatMessage(level: string, message: string, context?: LogData): string {
     const timestamp = this.formatTimestamp();
     const contextStr = context ? ` ${JSON.stringify(context)}` : '';
     
@@ -47,7 +49,7 @@ class CentralLogger {
         WARN: '\x1b[33m',  // Yellow
         INFO: '\x1b[32m',  // Green
         DEBUG: '\x1b[36m', // Cyan
-        RESET: '\x1b[0m'
+        RESET: '\x1b[0m',
       };
       
       return `[${timestamp}] ${colors[level as keyof typeof colors]}${level}${colors.RESET}: ${message}${contextStr}`;
@@ -56,25 +58,25 @@ class CentralLogger {
     return `[${timestamp}] ${level}: ${message}${contextStr}`;
   }
 
-  error(message: string, context?: any): void {
+  error(message: string, context?: LogData): void {
     if (this.level >= LogLevel.ERROR) {
       console.error(this.formatMessage('ERROR', message, context));
     }
   }
 
-  warn(message: string, context?: any): void {
+  warn(message: string, context?: LogData): void {
     if (this.level >= LogLevel.WARN) {
       console.error(this.formatMessage('WARN', message, context));
     }
   }
 
-  info(message: string, context?: any): void {
+  info(message: string, context?: LogData): void {
     if (this.level >= LogLevel.INFO) {
       console.error(this.formatMessage('INFO', message, context));
     }
   }
 
-  debug(message: string, context?: any): void {
+  debug(message: string, context?: LogData): void {
     if (this.level >= LogLevel.DEBUG) {
       console.error(this.formatMessage('DEBUG', message, context));
     }
@@ -94,11 +96,11 @@ class CentralLogger {
   }
 
   // API request/response logging helpers
-  apiRequest(method: string, url: string, params?: any): void {
+  apiRequest(method: string, url: string, params?: Record<string, unknown>): void {
     this.debug('API Request', {
       method: method.toUpperCase(),
       url,
-      params: params ? Object.keys(params) : undefined
+      params: params ? Object.keys(params) : undefined,
     });
   }
 
@@ -108,7 +110,7 @@ class CentralLogger {
       url,
       status,
       duration: `${duration}ms`,
-      dataSize: dataSize ? `${dataSize} bytes` : undefined
+      dataSize: dataSize ? `${dataSize} bytes` : undefined,
     });
   }
 
@@ -118,7 +120,7 @@ class CentralLogger {
       url,
       status,
       error,
-      duration: `${duration}ms`
+      duration: `${duration}ms`,
     });
   }
 
@@ -135,15 +137,15 @@ class CentralLogger {
     this.debug('Cache Set', {
       key,
       ttl: `${ttl}s`,
-      size: size ? `${size} bytes` : undefined
+      size: size ? `${size} bytes` : undefined,
     });
   }
 
   // Tool execution logging
-  toolStart(name: string, args: any): void {
+  toolStart(name: string, args: Record<string, unknown>): void {
     this.info('Tool Execution Started', {
       tool: name,
-      argsProvided: !!args && Object.keys(args).length > 0
+      argsProvided: !!args && Object.keys(args).length > 0,
     });
   }
 
@@ -151,7 +153,7 @@ class CentralLogger {
     this.info('Tool Execution Completed', {
       tool: name,
       duration: `${duration}ms`,
-      resultSize: resultSize ? `${resultSize} bytes` : undefined
+      resultSize: resultSize ? `${resultSize} bytes` : undefined,
     });
   }
 
@@ -159,26 +161,26 @@ class CentralLogger {
     this.error('Tool Execution Failed', {
       tool: name,
       error,
-      duration: `${duration}ms`
+      duration: `${duration}ms`,
     });
   }
 
   // Server lifecycle logging
-  serverStart(config: any): void {
+  serverStart(config: LogData): void {
     this.info('Server Starting', config);
   }
 
   serverReady(toolCount: number): void {
     this.info('Server Ready', {
       toolsAvailable: toolCount,
-      logLevel: LogLevel[this.level]
+      logLevel: LogLevel[this.level],
     });
   }
 
-  serverError(error: any): void {
+  serverError(error: Error | string): void {
     this.error('Server Error', {
       error: error instanceof Error ? error.message : error,
-      stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
+      stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined,
     });
   }
 
@@ -188,13 +190,13 @@ class CentralLogger {
       current,
       max,
       remaining: max - current,
-      resetTime: resetTime.toISOString()
+      resetTime: resetTime.toISOString(),
     });
   }
 
   rateLimitExceeded(waitTime: number): void {
     this.error('Rate Limit Exceeded', {
-      waitTimeSeconds: Math.ceil(waitTime / 1000)
+      waitTimeSeconds: Math.ceil(waitTime / 1000),
     });
   }
 }
@@ -204,8 +206,8 @@ export const logger = new CentralLogger();
 
 // Export convenience functions for backward compatibility
 export const log = {
-  error: (message: string, context?: any) => logger.error(message, context),
-  warn: (message: string, context?: any) => logger.warn(message, context),
-  info: (message: string, context?: any) => logger.info(message, context),
-  debug: (message: string, context?: any) => logger.debug(message, context),
+  error: (message: string, context?: LogData) => logger.error(message, context),
+  warn: (message: string, context?: LogData) => logger.warn(message, context),
+  info: (message: string, context?: LogData) => logger.info(message, context),
+  debug: (message: string, context?: LogData) => logger.debug(message, context),
 };

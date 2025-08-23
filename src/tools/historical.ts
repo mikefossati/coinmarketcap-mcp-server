@@ -2,11 +2,12 @@ import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { CoinMarketCapClient } from '../api/client.js';
 import { CacheManager } from '../api/cache.js';
 import { HistoricalQuote } from '../types/index.js';
+import { PerformanceMetrics, NormalizedPerformanceData } from '../types/api.js';
 
 export class HistoricalAnalysisTools {
   constructor(
     private client: CoinMarketCapClient,
-    private cache: CacheManager
+    private cache: CacheManager,
   ) {}
 
   getTools(): Tool[] {
@@ -183,20 +184,20 @@ export class HistoricalAnalysisTools {
     ];
   }
 
-  async handleToolCall(name: string, args: any): Promise<any> {
+  async handleToolCall(name: string, args: Record<string, unknown>): Promise<unknown> {
     switch (name) {
-      case 'get_historical_data':
-        return this.getHistoricalData(args);
-      case 'analyze_price_performance':
-        return this.analyzePricePerformance(args);
-      case 'compare_historical_performance':
-        return this.compareHistoricalPerformance(args);
-      case 'analyze_market_cycles':
-        return this.analyzeMarketCycles(args);
-      case 'calculate_risk_metrics':
-        return this.calculateRiskMetrics(args);
-      default:
-        throw new Error(`Unknown tool: ${name}`);
+    case 'get_historical_data':
+      return this.getHistoricalData(args as { symbol: string; time_start: string; time_end: string; interval?: string; include_analysis?: boolean });
+    case 'analyze_price_performance':
+      return this.analyzePricePerformance(args as { symbol: string; periods?: string[]; benchmark?: string; include_drawdown?: boolean });
+    case 'compare_historical_performance':
+      return this.compareHistoricalPerformance(args as { symbols: string[]; timeframe?: string; metrics?: string[]; normalize?: boolean });
+    case 'analyze_market_cycles':
+      return this.analyzeMarketCycles(args as { symbol: string; analysis_type?: string; timeframe?: string; include_predictions?: boolean });
+    case 'calculate_risk_metrics':
+      return this.calculateRiskMetrics(args as { symbol: string; timeframe?: string; confidence_levels?: number[]; benchmark?: string; risk_free_rate?: number });
+    default:
+      throw new Error(`Unknown tool: ${name}`);
     }
   }
 
@@ -212,7 +213,7 @@ export class HistoricalAnalysisTools {
       time_start, 
       time_end, 
       interval = '1d', 
-      include_analysis = true 
+      include_analysis = true, 
     } = args;
 
     const cacheKey = this.cache.generateCacheKey('historical_data', {
@@ -233,7 +234,7 @@ export class HistoricalAnalysisTools {
         convert: 'USD',
       });
 
-      const historicalData = (response.data as any).quotes.map((quote: any) => ({
+      const historicalData = (response.data as { quotes: any[] }).quotes.map((quote: any) => ({
         timestamp: quote.time_open,
         date: new Date(quote.time_open).toISOString().split('T')[0],
         open: quote.quote.USD.open,
@@ -279,22 +280,23 @@ export class HistoricalAnalysisTools {
       symbol, 
       periods = ['7d', '30d', '90d'], 
       benchmark = 'BTC',
-      include_drawdown = true 
+      include_drawdown = true, 
     } = args;
 
     const cacheKey = this.cache.generateCacheKey('price_performance', {
       symbol, periods, benchmark, include_drawdown,
     });
     
-    let result = this.cache.get(cacheKey);
+    const result = this.cache.get(cacheKey);
     if (result) {
       return result;
     }
 
     try {
-      const performance: any = {
+      const performance: PerformanceMetrics = {
         symbol: symbol.toUpperCase(),
         benchmark: benchmark.toUpperCase(),
+        period: 'multiple',
         periods: {},
         comparison_to_benchmark: {},
         last_updated: new Date().toISOString(),
@@ -325,6 +327,7 @@ export class HistoricalAnalysisTools {
               periodAnalysis.drawdown_periods = this.identifyDrawdownPeriods(historicalData);
             }
 
+            performance.periods = performance.periods || {};
             performance.periods[period] = periodAnalysis;
 
             // Compare to benchmark if it's not the same symbol
@@ -333,12 +336,15 @@ export class HistoricalAnalysisTools {
                 const benchmarkData = await this.getHistoricalDataForPeriod(benchmark, startDate, endDate);
                 const benchmarkPerformance = this.calculatePeriodPerformance(benchmarkData);
                 
+                performance.comparison_to_benchmark = performance.comparison_to_benchmark || {};
                 performance.comparison_to_benchmark[period] = {
+                  correlation: this.calculateCorrelation(historicalData, benchmarkData),
+                  beta: this.calculateBeta(historicalData, benchmarkData),
+                  alpha: periodAnalysis.total_return - (benchmarkPerformance.total_return * this.calculateBeta(historicalData, benchmarkData)),
+                  excess_return: periodAnalysis.total_return - benchmarkPerformance.total_return,
                   symbol_return: periodAnalysis.total_return,
                   benchmark_return: benchmarkPerformance.total_return,
                   outperformance: periodAnalysis.total_return - benchmarkPerformance.total_return,
-                  beta: this.calculateBeta(historicalData, benchmarkData),
-                  correlation: this.calculateCorrelation(historicalData, benchmarkData),
                 };
               } catch (error) {
                 console.error(`[${new Date().toISOString()}] WARN: ` + `Failed to get benchmark data for ${period}:`, error);
@@ -347,7 +353,18 @@ export class HistoricalAnalysisTools {
           }
         } catch (error) {
           console.error(`[${new Date().toISOString()}] WARN: ` + `Failed to analyze period ${period}:`, error);
-          performance.periods[period] = { error: `Analysis failed: ${error}` };
+          performance.periods = performance.periods || {};
+          performance.periods[period] = {
+            returns: 0,
+            annualized_return: 0,
+            volatility: 0,
+            max_drawdown: 0,
+            start_price: 0,
+            end_price: 0,
+            start_date: '',
+            end_date: '',
+            error: `Analysis failed: ${error}`,
+          };
         }
       }
 
@@ -371,7 +388,7 @@ export class HistoricalAnalysisTools {
       symbols, 
       timeframe = '90d', 
       metrics = ['returns', 'volatility', 'sharpe_ratio'],
-      normalize = true 
+      normalize = true, 
     } = args;
 
     const cacheKey = this.cache.generateCacheKey('historical_performance_comparison', {
@@ -389,7 +406,7 @@ export class HistoricalAnalysisTools {
       const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
 
       const comparisons = [];
-      const normalizedData: any = {};
+      const normalizedData: NormalizedPerformanceData = {};
 
       // Get data for each symbol
       for (const symbol of symbols) {
@@ -406,7 +423,14 @@ export class HistoricalAnalysisTools {
 
             // Prepare normalized data for comparison
             if (normalize) {
-              normalizedData[symbol.toUpperCase()] = this.normalizeData(historicalData);
+              const normalized = this.normalizeData(historicalData);
+              normalizedData[symbol.toUpperCase()] = {
+                normalized_prices: normalized.map(d => d.normalized_price),
+                dates: normalized.map(d => d.date),
+                returns: analysis.total_return || 0,
+                volatility: analysis.volatility || 0,
+                max_drawdown: analysis.max_drawdown || 0,
+              };
             }
           }
         } catch (error) {
@@ -456,14 +480,14 @@ export class HistoricalAnalysisTools {
       symbol, 
       analysis_type = 'all', 
       timeframe = '2y',
-      include_predictions = false 
+      include_predictions = false, 
     } = args;
 
     const cacheKey = this.cache.generateCacheKey('market_cycles', {
       symbol, analysis_type, timeframe, include_predictions,
     });
     
-    let result = this.cache.get(cacheKey);
+    const result = this.cache.get(cacheKey);
     if (result) {
       return result;
     }
@@ -529,14 +553,14 @@ export class HistoricalAnalysisTools {
       timeframe = '90d',
       confidence_levels = [0.95, 0.99],
       benchmark = 'BTC',
-      risk_free_rate = 5.0 
+      risk_free_rate = 5.0, 
     } = args;
 
     const cacheKey = this.cache.generateCacheKey('risk_metrics', {
       symbol, timeframe, confidence_levels, benchmark, risk_free_rate,
     });
     
-    let result = this.cache.get(cacheKey);
+    const result = this.cache.get(cacheKey);
     if (result) {
       return result;
     }
@@ -601,7 +625,7 @@ export class HistoricalAnalysisTools {
           riskMetrics.correlation_with_benchmark = this.calculateCorrelation(returns, benchmarkReturns);
           riskMetrics.tracking_error = this.calculateTrackingError(returns, benchmarkReturns);
         } catch (error) {
-          console.error(`[${new Date().toISOString()}] WARN: ` + `Failed to calculate benchmark-related metrics:`, error);
+          console.error(`[${new Date().toISOString()}] WARN: ` + 'Failed to calculate benchmark-related metrics:', error);
         }
       }
 
@@ -797,9 +821,7 @@ export class HistoricalAnalysisTools {
     const mean1 = returns1.reduce((sum, ret) => sum + ret, 0) / returns1.length;
     const mean2 = returns2.reduce((sum, ret) => sum + ret, 0) / returns2.length;
 
-    return returns1.reduce((sum, ret, i) => {
-      return sum + (ret - mean1) * (returns2[i] - mean2);
-    }, 0) / returns1.length;
+    return returns1.reduce((sum, ret, i) => sum + (ret - mean1) * (returns2[i] - mean2), 0) / returns1.length;
   }
 
   private calculateVariance(returns: number[]): number {
@@ -945,7 +967,7 @@ export class HistoricalAnalysisTools {
 
   private analyzeDayOfWeekPatterns(data: any[]): any {
     const dayReturns: Record<string, number> = {
-      Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0
+      Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0,
     };
     return dayReturns;
   }
@@ -1027,13 +1049,13 @@ export class HistoricalAnalysisTools {
 
   private getBestPerformer(comparisons: any[]): any {
     return comparisons.reduce((best, current) => 
-      (current.total_return || 0) > (best.total_return || 0) ? current : best, comparisons[0]
+      (current.total_return || 0) > (best.total_return || 0) ? current : best, comparisons[0],
     );
   }
 
   private getWorstPerformer(comparisons: any[]): any {
     return comparisons.reduce((worst, current) => 
-      (current.total_return || 0) < (worst.total_return || 0) ? current : worst, comparisons[0]
+      (current.total_return || 0) < (worst.total_return || 0) ? current : worst, comparisons[0],
     );
   }
 

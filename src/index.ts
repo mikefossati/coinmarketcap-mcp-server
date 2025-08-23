@@ -20,6 +20,7 @@ import { TechnicalAnalysisTools } from './tools/technical.js';
 import { HistoricalAnalysisTools } from './tools/historical.js';
 import { sanitizeInput } from './utils/validators.js';
 import { ApiTierManager, ApiTier } from './config/api-tiers.js';
+import { RequestStats, ServerStats, RateLimitStatus, ApiTierStatus } from './types/api.js';
 
 class CoinMarketCapMCPServer {
   private server: Server;
@@ -310,7 +311,7 @@ class CoinMarketCapMCPServer {
     });
   }
 
-  private async getServerInfo(): Promise<any> {
+  private async getServerInfo(): Promise<ServerStats> {
     return {
       server_name: 'CoinMarketCap MCP Server',
       version: '1.0.0',
@@ -361,7 +362,7 @@ class CoinMarketCapMCPServer {
     };
   }
 
-  private async getRateLimitStatus(): Promise<any> {
+  private async getRateLimitStatus(): Promise<RateLimitStatus> {
     const stats = this.client.getRequestStats();
     return {
       rate_limit_status: {
@@ -376,7 +377,7 @@ class CoinMarketCapMCPServer {
     };
   }
 
-  private generateRateLimitRecommendations(stats: any): string[] {
+  private generateRateLimitRecommendations(stats: RequestStats): string[] {
     const recommendations = [];
     
     const utilizationRate = stats.requestCount / stats.maxRequestsPerMinute;
@@ -397,7 +398,7 @@ class CoinMarketCapMCPServer {
     return recommendations;
   }
 
-  private async getApiTierStatus(): Promise<any> {
+  private async getApiTierStatus(): Promise<ApiTierStatus> {
     return {
       api_tier_status: {
         current_tier: this.apiTierManager.getTier(),
@@ -513,42 +514,6 @@ class CoinMarketCapMCPServer {
     console.error(`[${new Date().toISOString()}] INFO: Logging level: ${process.env.DEBUG ? 'DEBUG' : 'INFO'}`);
   }
 }
-
-// Additional server management tools
-const serverTools = [
-  {
-    name: 'get_server_info',
-    description: 'Get information about the MCP server, its capabilities, and status',
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
-  },
-  {
-    name: 'get_cache_stats',
-    description: 'Get cache performance statistics and hit rates',
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
-  },
-  {
-    name: 'get_rate_limit_status',
-    description: 'Get current rate limit status and API usage statistics',
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
-  },
-  {
-    name: 'get_api_tier_status',
-    description: 'Get current API tier status, available tools, and upgrade information',
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
-  },
-];
 
 // Main execution
 async function main() {

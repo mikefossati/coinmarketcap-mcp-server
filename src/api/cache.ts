@@ -9,7 +9,7 @@ export class CacheManager {
     this.cache = new NodeCache({
       stdTTL: ttlSeconds,
       checkperiod: checkPeriod,
-      maxKeys: maxKeys,
+      maxKeys,
       deleteOnExpire: true,
       useClones: false,
     });
@@ -18,7 +18,7 @@ export class CacheManager {
   }
 
   private setupEventHandlers(): void {
-    this.cache.on('expired', (key, value) => {
+    this.cache.on('expired', (key, _value) => {
       console.error(`[${new Date().toISOString()}] INFO: Cache key expired: ${key}`);
     });
 
@@ -26,13 +26,13 @@ export class CacheManager {
       console.error(`[${new Date().toISOString()}] INFO: Cache flushed`);
     });
 
-    this.cache.on('set', (key, value) => {
+    this.cache.on('set', (key, _value) => {
       if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
         console.error(`[${new Date().toISOString()}] DEBUG: Cache key set: ${key}`);
       }
     });
 
-    this.cache.on('del', (key, value) => {
+    this.cache.on('del', (key, _value) => {
       if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
         console.error(`[${new Date().toISOString()}] DEBUG: Cache key deleted: ${key}`);
       }
@@ -96,13 +96,18 @@ export class CacheManager {
     };
   }
 
-  generateCacheKey(method: string, params: Record<string, any> = {}): string {
+  generateCacheKey(method: string, params: Record<string, unknown> = {}): string {
+    // Optimize key generation by avoiding object creation for empty params
+    if (Object.keys(params).length === 0) {
+      return `${method}:{}`;
+    }
+    
     const sortedParams = Object.keys(params)
       .sort()
       .reduce((result, key) => {
         result[key] = params[key];
         return result;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, unknown>);
     
     return `${method}:${JSON.stringify(sortedParams)}`;
   }
@@ -132,8 +137,37 @@ export class CacheManager {
     }
     return success;
   }
+
+  // Memory optimization: Clean up expired keys manually if needed
+  cleanExpired(): number {
+    const expiredKeys: string[] = [];
+    const allKeys = this.keys();
+    
+    for (const key of allKeys) {
+      const ttl = this.getTTL(key);
+      if (ttl !== undefined && ttl < Date.now()) {
+        expiredKeys.push(key);
+      }
+    }
+    
+    if (expiredKeys.length > 0) {
+      const deleted = this.del(expiredKeys);
+      console.error(`[${new Date().toISOString()}] INFO: Cleaned ${deleted} expired cache keys`);
+      return deleted;
+    }
+    
+    return 0;
+  }
+
+  // Get memory usage information
+  getMemoryInfo(): { keyCount: number; memoryUsage: number; hitRate: number } {
+    const stats = this.getStats();
+    return {
+      keyCount: stats.keys,
+      memoryUsage: stats.ksize + stats.vsize,
+      hitRate: stats.hitRate,
+    };
+  }
 }
 
-export const createCacheManager = (ttlSeconds?: number, checkPeriod?: number, maxKeys?: number) => {
-  return new CacheManager(ttlSeconds, checkPeriod, maxKeys);
-};
+export const createCacheManager = (ttlSeconds?: number, checkPeriod?: number, maxKeys?: number) => new CacheManager(ttlSeconds, checkPeriod, maxKeys);

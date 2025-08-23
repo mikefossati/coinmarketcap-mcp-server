@@ -1,6 +1,8 @@
 // CoinMarketCap API Tier Configuration
 // Based on observed errors and API documentation
 
+import { ApiTierConfig } from '../types/api.js';
+
 export enum ApiTier {
   FREE = 'free',
   STARTUP = 'startup', 
@@ -55,7 +57,7 @@ export const API_TIER_CONFIG = {
       advancedAnalytics: false,
       technicalIndicators: false, // Requires historical data
       riskMetrics: false, // Requires historical data
-    }
+    },
   },
   [ApiTier.STARTUP]: {
     maxCallsPerMonth: 1000000,
@@ -68,8 +70,8 @@ export const API_TIER_CONFIG = {
       advancedAnalytics: true,
       technicalIndicators: true,
       riskMetrics: true,
-    }
-  }
+    },
+  },
 };
 
 // Tool to endpoint mapping (which tools require which endpoints)
@@ -101,7 +103,7 @@ export const TOOL_ENDPOINT_MAPPING = {
 
 export class ApiTierManager {
   private tier: ApiTier;
-  private config: any;
+  private config: ApiTierConfig;
 
   constructor(tier: ApiTier = ApiTier.FREE) {
     this.tier = tier;
@@ -150,7 +152,7 @@ export class ApiTierManager {
   generateUnavailableToolError(toolName: string): string {
     return `This tool (${toolName}) requires a paid CoinMarketCap API plan. ` +
            `Current tier: ${this.tier.toUpperCase()}. ` +
-           `Upgrade to STARTUP plan or higher at https://coinmarketcap.com/api/pricing/ ` +
-           `to access historical data and advanced analytics features.`;
+           'Upgrade to STARTUP plan or higher at https://coinmarketcap.com/api/pricing/ ' +
+           'to access historical data and advanced analytics features.';
   }
 }

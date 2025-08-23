@@ -6,7 +6,7 @@ import { CryptoQuote, SupportedCurrency, SortBy } from '../types/index.js';
 export class PriceDataTools {
   constructor(
     private client: CoinMarketCapClient,
-    private cache: CacheManager
+    private cache: CacheManager,
   ) {}
 
   getTools(): Tool[] {
@@ -140,16 +140,16 @@ export class PriceDataTools {
 
   async handleToolCall(name: string, args: any): Promise<any> {
     switch (name) {
-      case 'get_crypto_price':
-        return this.getCryptoPrice(args);
-      case 'get_multiple_prices':
-        return this.getMultiplePrices(args);
-      case 'get_top_cryptocurrencies':
-        return this.getTopCryptocurrencies(args);
-      case 'search_cryptocurrencies':
-        return this.searchCryptocurrencies(args);
-      default:
-        throw new Error(`Unknown tool: ${name}`);
+    case 'get_crypto_price':
+      return this.getCryptoPrice(args);
+    case 'get_multiple_prices':
+      return this.getMultiplePrices(args);
+    case 'get_top_cryptocurrencies':
+      return this.getTopCryptocurrencies(args);
+    case 'search_cryptocurrencies':
+      return this.searchCryptocurrencies(args);
+    default:
+      throw new Error(`Unknown tool: ${name}`);
     }
   }
 
@@ -395,7 +395,7 @@ export class PriceDataTools {
         .filter((crypto: any) => 
           crypto.name.toLowerCase().includes(searchTerm) ||
           crypto.symbol.toLowerCase().includes(searchTerm) ||
-          crypto.slug.toLowerCase().includes(searchTerm)
+          crypto.slug.toLowerCase().includes(searchTerm),
         )
         .slice(0, limit)
         .map((crypto: any) => {

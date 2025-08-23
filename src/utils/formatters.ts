@@ -24,9 +24,9 @@ export const formatMarketCap = (marketCap: number, currency: string = 'USD'): st
   }
 };
 
-export const formatVolume = (volume: number, currency: string = 'USD'): string => {
-  return formatMarketCap(volume, currency); // Same formatting logic
-};
+export const formatVolume = (volume: number, currency: string = 'USD'): string => 
+  formatMarketCap(volume, currency) // Same formatting logic
+;
 
 export const formatPercentage = (percentage: number, decimals: number = 2): string => {
   const sign = percentage >= 0 ? '+' : '';
@@ -245,9 +245,7 @@ export const formatBeta = (beta: number): { text: string; volatility: string } =
   };
 };
 
-export const formatDrawdown = (drawdown: number): string => {
-  return `-${Math.abs(drawdown).toFixed(2)}%`;
-};
+export const formatDrawdown = (drawdown: number): string => `-${Math.abs(drawdown).toFixed(2)}%`;
 
 export const formatTimeAgo = (date: string | Date): string => {
   const now = new Date();

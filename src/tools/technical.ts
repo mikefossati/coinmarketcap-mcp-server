@@ -6,7 +6,7 @@ import { TechnicalIndicators, HistoricalQuote } from '../types/index.js';
 export class TechnicalAnalysisTools {
   constructor(
     private client: CoinMarketCapClient,
-    private cache: CacheManager
+    private cache: CacheManager,
   ) {}
 
   getTools(): Tool[] {
@@ -144,16 +144,16 @@ export class TechnicalAnalysisTools {
 
   async handleToolCall(name: string, args: any): Promise<any> {
     switch (name) {
-      case 'calculate_technical_indicators':
-        return this.calculateTechnicalIndicators(args);
-      case 'analyze_price_action':
-        return this.analyzePriceAction(args);
-      case 'generate_trading_signals':
-        return this.generateTradingSignals(args);
-      case 'compare_technical_strength':
-        return this.compareTechnicalStrength(args);
-      default:
-        throw new Error(`Unknown tool: ${name}`);
+    case 'calculate_technical_indicators':
+      return this.calculateTechnicalIndicators(args);
+    case 'analyze_price_action':
+      return this.analyzePriceAction(args);
+    case 'generate_trading_signals':
+      return this.generateTradingSignals(args);
+    case 'compare_technical_strength':
+      return this.compareTechnicalStrength(args);
+    default:
+      throw new Error(`Unknown tool: ${name}`);
     }
   }
 
@@ -167,14 +167,14 @@ export class TechnicalAnalysisTools {
       symbol, 
       indicators = ['rsi', 'macd', 'sma'], 
       period = 14, 
-      timeframe = '30d' 
+      timeframe = '30d', 
     } = args;
 
     const cacheKey = this.cache.generateCacheKey('technical_indicators', { 
-      symbol, indicators, period, timeframe 
+      symbol, indicators, period, timeframe, 
     });
     
-    let result = this.cache.get(cacheKey);
+    const result = this.cache.get(cacheKey);
     if (result) {
       return result;
     }
@@ -200,24 +200,24 @@ export class TechnicalAnalysisTools {
       for (const indicator of indicators) {
         try {
           switch (indicator) {
-            case 'rsi':
-              technicalData.indicators.rsi = this.calculateRSI(historicalData, period);
-              break;
-            case 'macd':
-              technicalData.indicators.macd = this.calculateMACD(historicalData);
-              break;
-            case 'sma':
-              technicalData.indicators.sma = this.calculateSMA(historicalData, period);
-              break;
-            case 'ema':
-              technicalData.indicators.ema = this.calculateEMA(historicalData, period);
-              break;
-            case 'bollinger':
-              technicalData.indicators.bollinger = this.calculateBollingerBands(historicalData, period);
-              break;
-            case 'volume_sma':
-              technicalData.indicators.volume_sma = this.calculateVolumeSMA(historicalData, period);
-              break;
+          case 'rsi':
+            technicalData.indicators.rsi = this.calculateRSI(historicalData, period);
+            break;
+          case 'macd':
+            technicalData.indicators.macd = this.calculateMACD(historicalData);
+            break;
+          case 'sma':
+            technicalData.indicators.sma = this.calculateSMA(historicalData, period);
+            break;
+          case 'ema':
+            technicalData.indicators.ema = this.calculateEMA(historicalData, period);
+            break;
+          case 'bollinger':
+            technicalData.indicators.bollinger = this.calculateBollingerBands(historicalData, period);
+            break;
+          case 'volume_sma':
+            technicalData.indicators.volume_sma = this.calculateVolumeSMA(historicalData, period);
+            break;
           }
         } catch (error) {
           console.error(`[${new Date().toISOString()}] WARN: ` + `Failed to calculate ${indicator}:`, error);
@@ -245,14 +245,14 @@ export class TechnicalAnalysisTools {
       symbol, 
       timeframe = '30d', 
       include_patterns = true, 
-      include_levels = true 
+      include_levels = true, 
     } = args;
 
     const cacheKey = this.cache.generateCacheKey('price_action_analysis', { 
-      symbol, timeframe, include_patterns, include_levels 
+      symbol, timeframe, include_patterns, include_levels, 
     });
     
-    let result = this.cache.get(cacheKey);
+    const result = this.cache.get(cacheKey);
     if (result) {
       return result;
     }
@@ -304,14 +304,14 @@ export class TechnicalAnalysisTools {
       symbol, 
       strategy = 'moderate', 
       timeframe = '7d', 
-      include_confidence = true 
+      include_confidence = true, 
     } = args;
 
     const cacheKey = this.cache.generateCacheKey('trading_signals', { 
-      symbol, strategy, timeframe, include_confidence 
+      symbol, strategy, timeframe, include_confidence, 
     });
     
-    let result = this.cache.get(cacheKey);
+    const result = this.cache.get(cacheKey);
     if (result) {
       return result;
     }
@@ -379,14 +379,14 @@ export class TechnicalAnalysisTools {
     const { 
       symbols, 
       metrics = ['rsi', 'momentum', 'trend_strength'], 
-      timeframe = '30d' 
+      timeframe = '30d', 
     } = args;
 
     const cacheKey = this.cache.generateCacheKey('technical_strength_comparison', { 
-      symbols: symbols.join(','), metrics, timeframe 
+      symbols: symbols.join(','), metrics, timeframe, 
     });
     
-    let result = this.cache.get(cacheKey);
+    const result = this.cache.get(cacheKey);
     if (result) {
       return result;
     }
@@ -772,7 +772,7 @@ export class TechnicalAnalysisTools {
   private calculateTrendStrength(prices: number[]): number {
     // Simple linear regression slope as trend strength
     const n = prices.length;
-    const x = Array.from({length: n}, (_, i) => i);
+    const x = Array.from({ length: n }, (_, i) => i);
     const y = prices;
     
     const sumX = x.reduce((sum, val) => sum + val, 0);
@@ -965,7 +965,7 @@ export class TechnicalAnalysisTools {
     const threshold = this.getSignalThreshold(strategy);
     
     let overallSignal = 'hold';
-    let confidence = Math.abs(bullishPercentage - bearishPercentage);
+    const confidence = Math.abs(bullishPercentage - bearishPercentage);
     
     if (bullishPercentage > threshold) overallSignal = 'buy';
     else if (bearishPercentage > threshold) overallSignal = 'sell';
@@ -997,7 +997,7 @@ export class TechnicalAnalysisTools {
     // Trend contribution
     if (data.priceAction.trend_analysis) {
       const trendScore = data.priceAction.trend_analysis.direction === 'bullish' ? 80 : 
-                        data.priceAction.trend_analysis.direction === 'bearish' ? 20 : 50;
+        data.priceAction.trend_analysis.direction === 'bearish' ? 20 : 50;
       score += (trendScore - 50) * 0.4;
       breakdown.trend = trendScore;
     }
@@ -1121,10 +1121,10 @@ export class TechnicalAnalysisTools {
 
   private calculateConsensus(signals: any[]): string {
     const bullishSignals = signals.filter(s => 
-      s.signal === 'bullish' || s.signal === 'buy' || s.signal === 'overbought'
+      s.signal === 'bullish' || s.signal === 'buy' || s.signal === 'overbought',
     ).length;
     const bearishSignals = signals.filter(s => 
-      s.signal === 'bearish' || s.signal === 'sell' || s.signal === 'oversold'
+      s.signal === 'bearish' || s.signal === 'sell' || s.signal === 'oversold',
     ).length;
     
     const consensusThreshold = 0.7;

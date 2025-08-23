@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { CMCApiResponse, CMCError } from '../types/index.js';
+import { LogData, RequestStats } from '../types/api.js';
 
 // Enhanced logging utility
 class Logger {
@@ -7,19 +8,19 @@ class Logger {
     return new Date().toISOString();
   }
 
-  static info(message: string, data?: any): void {
+  static info(message: string, data?: LogData): void {
     console.error(`[${this.formatTimestamp()}] INFO: ${message}`, data ? JSON.stringify(data, null, 2) : '');
   }
 
-  static error(message: string, error?: any): void {
+  static error(message: string, error?: Error | string | LogData): void {
     console.error(`[${this.formatTimestamp()}] ERROR: ${message}`, error);
   }
 
-  static warn(message: string, data?: any): void {
+  static warn(message: string, data?: LogData): void {
     console.error(`[${this.formatTimestamp()}] WARN: ${message}`, data ? JSON.stringify(data, null, 2) : '');
   }
 
-  static debug(message: string, data?: any): void {
+  static debug(message: string, data?: LogData): void {
     if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
       console.error(`[${this.formatTimestamp()}] DEBUG: ${message}`, data ? JSON.stringify(data, null, 2) : '');
     }
@@ -43,7 +44,7 @@ export class CoinMarketCapClient {
       baseURL,
       maxRequestsPerMinute,
       timeout: '10s',
-      apiKeyConfigured: !!apiKey
+      apiKeyConfigured: !!apiKey,
     });
 
     this.client = axios.create({
@@ -52,7 +53,7 @@ export class CoinMarketCapClient {
         'X-CMC_PRO_API_KEY': apiKey,
         'Accept': 'application/json',
         'Accept-Encoding': 'deflate, gzip',
-        'User-Agent': 'CoinMarketCap-MCP-Server/1.0.0'
+        'User-Agent': 'CoinMarketCap-MCP-Server/1.0.0',
       },
       timeout: 10000,
     });
@@ -76,7 +77,7 @@ export class CoinMarketCapClient {
           url: config.url,
           params: config.params,
           requestCount: this.requestCount,
-          remainingRequests: this.maxRequestsPerMinute - this.requestCount
+          remainingRequests: this.maxRequestsPerMinute - this.requestCount,
         });
         
         return config;
@@ -84,7 +85,7 @@ export class CoinMarketCapClient {
       (error) => {
         Logger.error('API Request Setup Failed', error);
         return Promise.reject(error);
-      }
+      },
     );
 
     // Response interceptor with detailed logging
@@ -102,7 +103,7 @@ export class CoinMarketCapClient {
           params: response.config.params,
           dataSize: JSON.stringify(response.data).length,
           creditsUsed: response.data?.status?.credit_count || 'N/A',
-          remainingCredits: response.headers['x-cmc-plan-credits-remaining'] || 'N/A'
+          remainingCredits: response.headers['x-cmc-plan-credits-remaining'] || 'N/A',
         });
 
         // Log API usage statistics from response headers
@@ -112,7 +113,7 @@ export class CoinMarketCapClient {
             timestamp: response.data.status.timestamp,
             elapsed: response.data.status.elapsed,
             credit_count: response.data.status.credit_count,
-            notice: response.data.status.notice
+            notice: response.data.status.notice,
           });
         }
 
@@ -144,7 +145,7 @@ export class CoinMarketCapClient {
             ...errorDetails,
             cmcErrorCode: cmcError.error_code,
             cmcErrorMessage: cmcError.error_message,
-            fullResponse: error.response?.data
+            fullResponse: error.response?.data,
           });
           
           return Promise.reject(new Error(`CMC API Error ${cmcError.error_code}: ${cmcError.error_message}`));
@@ -155,31 +156,31 @@ export class CoinMarketCapClient {
           // Server responded with error status
           Logger.error('HTTP Error Response', {
             ...errorDetails,
-            responseData: error.response.data
+            responseData: error.response.data,
           });
           
           switch (error.response.status) {
-            case 401:
-              Logger.error('Authentication Failed - Check API Key', { requestId });
-              break;
-            case 402:
-              Logger.error('Payment Required - API Plan Limit Reached', { requestId });
-              break;
-            case 403:
-              Logger.error('Forbidden - API Key Invalid or Suspended', { requestId });
-              break;
-            case 429:
-              Logger.warn('Rate Limit Exceeded', {
-                requestId,
-                retryAfter: error.response.headers['retry-after'],
-                remainingCredits: error.response.headers['x-cmc-plan-credits-remaining']
-              });
-              break;
-            case 500:
-              Logger.error('CMC Server Internal Error', { requestId });
-              break;
-            default:
-              Logger.error(`HTTP ${error.response.status} Error`, errorDetails);
+          case 401:
+            Logger.error('Authentication Failed - Check API Key', { requestId });
+            break;
+          case 402:
+            Logger.error('Payment Required - API Plan Limit Reached', { requestId });
+            break;
+          case 403:
+            Logger.error('Forbidden - API Key Invalid or Suspended', { requestId });
+            break;
+          case 429:
+            Logger.warn('Rate Limit Exceeded', {
+              requestId,
+              retryAfter: error.response.headers['retry-after'],
+              remainingCredits: error.response.headers['x-cmc-plan-credits-remaining'],
+            });
+            break;
+          case 500:
+            Logger.error('CMC Server Internal Error', { requestId });
+            break;
+          default:
+            Logger.error(`HTTP ${error.response.status} Error`, errorDetails);
           }
         } else if (error.request) {
           // Request made but no response received
@@ -187,19 +188,19 @@ export class CoinMarketCapClient {
             requestId,
             duration: `${duration}ms`,
             timeout: error.code === 'ECONNABORTED',
-            message: error.message
+            message: error.message,
           });
         } else {
           // Request setup error
           Logger.error('Request Setup Error', {
             requestId,
             message: error.message,
-            stack: error.stack
+            stack: error.stack,
           });
         }
         
         return Promise.reject(error);
-      }
+      },
     );
   }
 
@@ -210,7 +211,7 @@ export class CoinMarketCapClient {
     if (timeSinceReset >= 60000) {
       Logger.debug('Rate limit window reset', {
         previousCount: this.requestCount,
-        timeSinceLastReset: `${timeSinceReset}ms`
+        timeSinceLastReset: `${timeSinceReset}ms`,
       });
       this.requestCount = 0;
       this.lastResetTime = now;
@@ -222,7 +223,7 @@ export class CoinMarketCapClient {
         currentRequests: this.requestCount,
         maxRequests: this.maxRequestsPerMinute,
         waitTimeSeconds: Math.ceil(waitTime / 1000),
-        resetTime: new Date(now + waitTime).toISOString()
+        resetTime: new Date(now + waitTime).toISOString(),
       });
       throw new Error(`Rate limit exceeded. Please wait ${Math.ceil(waitTime / 1000)} seconds.`);
     }
@@ -235,7 +236,7 @@ export class CoinMarketCapClient {
       Logger.debug('Making CMC API request', {
         requestId,
         endpoint,
-        params: params ? Object.keys(params) : 'none' // Log param keys but not values for privacy
+        params: params ? Object.keys(params) : 'none', // Log param keys but not values for privacy
       });
 
       const response: AxiosResponse<CMCApiResponse<T>> = await this.client.get(endpoint, { params });
@@ -244,7 +245,7 @@ export class CoinMarketCapClient {
         requestId,
         endpoint,
         status: response.status,
-        dataReceived: !!response.data
+        dataReceived: !!response.data,
       });
 
       return response.data;
@@ -256,8 +257,8 @@ export class CoinMarketCapClient {
         error: error instanceof Error ? {
           name: error.name,
           message: error.message,
-          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        } : error
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        } : error,
       });
       throw error;
     }
@@ -376,7 +377,7 @@ export class CoinMarketCapClient {
     return this.get('/v2/cryptocurrency/price-performance-stats', params);
   }
 
-  getRequestStats() {
+  getRequestStats(): RequestStats {
     return {
       requestCount: this.requestCount,
       lastResetTime: this.lastResetTime,
