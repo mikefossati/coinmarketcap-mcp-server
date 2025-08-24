@@ -37,11 +37,18 @@ Step-by-step Claude Desktop integration:
 
 ### **[Deployment Guide](DEPLOYMENT.md)**
 Production deployment instructions:
-- Docker containerization
-- Kubernetes deployment
 - Environment configuration for production
+- Kubernetes deployment
 - Monitoring and scaling considerations
 - CI/CD pipeline setup
+
+### **[Docker Guide](DOCKER.md)**
+Complete Docker setup and usage:
+- Docker build and run instructions
+- Multi-stage build configuration
+- Docker Compose with Redis and monitoring
+- Production containerization
+- Claude Desktop integration with Docker
 
 ## 🚀 **Quick Reference**
 

@@ -319,16 +319,12 @@ class CoinMarketCapMCPServer {
       api_provider: 'CoinMarketCap Pro API',
       features: [
         'Real-time price data',
-        'Market metrics and analysis',
-        'Technical indicators (RSI, MACD, Moving Averages, Bollinger Bands)',
-        'Historical data analysis',
-        'Market cycle analysis',
-        'Risk metrics calculation',
-        'Portfolio performance analysis',
-        'Trading signal generation',
-        'Comparative analysis',
-        'Market dominance tracking',
-        'Altcoin season analysis',
+        'Market metrics (market cap, volume, dominance)',
+        'Raw historical data (OHLCV)',
+        'Multi-cryptocurrency comparison',
+        'Market overview data',
+        'Trending cryptocurrencies',
+        'Raw technical data for LLM analysis',
       ],
       supported_cryptocurrencies: '10,000+',
       cache_enabled: true,
@@ -435,10 +431,10 @@ class CoinMarketCapMCPServer {
       limitations.push('No access to trending cryptocurrencies data');
     }
     if (!features.technicalIndicators) {
-      limitations.push('Cannot calculate technical indicators (RSI, MACD, etc.)');
+      limitations.push('Cannot access raw technical data for analysis');
     }
     if (!features.riskMetrics) {
-      limitations.push('Cannot calculate risk metrics and portfolio analysis');
+      limitations.push('Cannot access raw historical data for analysis');
     }
     if (!features.advancedAnalytics) {
       limitations.push('Limited to basic price and market data only');
@@ -451,10 +447,10 @@ class CoinMarketCapMCPServer {
     return [
       'Access to historical price data for technical analysis',
       'Real-time trending cryptocurrencies and market sentiment',
-      'Technical indicators: RSI, MACD, Bollinger Bands, Moving Averages',
-      'Risk metrics: VaR, Sharpe ratios, correlation analysis',
-      'Advanced portfolio performance tracking',
-      'Market cycle analysis and predictions',
+      'Raw technical data arrays for custom analysis',
+      'Extended historical data access',
+      'Advanced data endpoints',
+      'More comprehensive market data',
       'Higher rate limits and call credits',
       'Commercial usage rights',
     ];

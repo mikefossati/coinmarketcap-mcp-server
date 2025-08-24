@@ -53,11 +53,11 @@ npm test
 - `get_market_dominance` - BTC/ETH dominance analysis
 - `analyze_altcoin_season` - Altcoin season detection
 
-### ❌ **Premium Tools (11 require paid plan)**
-- Technical analysis tools (RSI, MACD, etc.)
-- Historical data analysis
-- Risk metrics calculation
-- Trading signals generation
+### ❌ **Premium Tools (8 require paid plan)**
+- Raw technical data access
+- Extended historical data
+- Advanced market metrics
+- Raw data for custom analysis
 
 **Check your status**: Use the `get_api_tier_status` tool for detailed information.
 
@@ -68,17 +68,15 @@ npm test
 - Market capitalization and volume tracking
 - Real-time market dominance metrics
 
-### 📈 **Technical Analysis** *(Paid tiers only)*
-- Technical Indicators: RSI, MACD, Moving Averages, Bollinger Bands
-- Price Action Analysis: Support/resistance levels, trend analysis
-- Trading Signals: Buy/sell/hold signals with confidence scores
-- Multi-asset Comparison: Compare technical strength
+### 📈 **Raw Data Access** *(Paid tiers only)*
+- Raw Technical Data: OHLCV arrays for custom analysis
+- Raw Price History: Unprocessed price and volume data
+- Multi-asset Data: Raw comparison data for multiple cryptocurrencies
 
-### 📋 **Historical Analysis** *(Paid tiers only)*
-- Historical OHLCV data with comprehensive analysis
-- Performance Metrics: Returns, volatility, Sharpe ratios
-- Risk Analysis: VaR, drawdowns, correlation analysis
-- Market Cycles: Seasonal patterns and cycle identification
+### 📋 **Historical Data** *(Paid tiers only)*
+- Raw Historical OHLCV data without pre-calculated analysis
+- Price History Arrays: Pure data for LLM analysis
+- Multi-timeframe Data: Various time periods for comparison
 
 ### ⚡ **Performance & Reliability**
 - **Smart Tier Management**: Automatic tool filtering based on API plan
@@ -103,12 +101,12 @@ npm test
 ### 💰 **Premium Tools** *(Startup plan and higher)*
 | Tool | Description | Requirements |
 |------|-------------|--------------|
-| `calculate_technical_indicators` | RSI, MACD, moving averages, Bollinger Bands | Historical data |
-| `analyze_price_action` | Price patterns and trend analysis | Historical data |
-| `generate_trading_signals` | Buy/sell/hold signals with confidence | Historical data |
-| `get_historical_data` | OHLCV data with analysis | Historical data |
-| `analyze_price_performance` | Returns, volatility, performance metrics | Historical data |
-| `calculate_risk_metrics` | VaR, Sharpe ratios, risk-adjusted returns | Historical data |
+| `get_technical_data` | Raw OHLCV data arrays for analysis | Historical data |
+| `get_price_data` | Raw price and volume historical data | Historical data |
+| `get_historical_data` | Raw historical OHLCV data without analysis | Historical data |
+| `get_price_history` | Simple price history data | Historical data |
+| `compare_historical_data` | Raw data for multiple cryptocurrencies | Historical data |
+| `get_market_dominance` | Raw market dominance data | Basic data |
 | `get_trending_cryptocurrencies` | Trending coins by search volume | Trending data |
 | `get_gainers_losers` | Top gainers and losers | Trending data |
 
@@ -117,6 +115,55 @@ npm test
 - `get_cache_stats` - Cache performance metrics  
 - `get_rate_limit_status` - API usage and rate limits
 - `get_api_tier_status` - **NEW**: Current tier status and upgrade info
+
+## 🐳 **Docker Quick Start**
+
+### **1. Quick Setup**
+```bash
+# Copy environment template
+cp .env.example .env
+# Edit .env and set your CMC_API_KEY
+
+# Run with Docker
+./docker-run.sh run
+
+# Or use Docker Compose
+./docker-run.sh compose
+```
+
+### **2. Docker Commands**
+```bash
+# Basic usage
+./docker-run.sh build          # Build image
+./docker-run.sh run            # Run server
+./docker-run.sh dev            # Development mode
+./docker-run.sh logs           # View logs
+./docker-run.sh stop           # Stop containers
+
+# Advanced profiles
+./docker-run.sh compose redis      # With Redis caching
+./docker-run.sh compose monitoring # With Prometheus + Grafana
+./docker-run.sh compose full       # Everything
+```
+
+### **3. Claude Desktop with Docker**
+```json
+{
+  "mcpServers": {
+    "coinmarketcap": {
+      "command": "docker",
+      "args": [
+        "run", "--rm",
+        "-e", "CMC_API_KEY=your_api_key_here",
+        "-e", "CMC_API_TIER=free",
+        "coinmarketcap-mcp"
+      ]
+    }
+  }
+}
+```
+
+**📋 See [docs/DOCKER.md](docs/DOCKER.md) for detailed Docker documentation**
 
 ## 🔧 **Configuration**
 
@@ -184,12 +231,12 @@ CMC_API_TIER=free npm run test:integration
 
 ### **Premium Tier Queries** *(Requires paid plan)*
 ```bash
-# Advanced analysis requiring paid API:
-"Calculate RSI and MACD for Bitcoin"
-"Show me Bitcoin's price performance over the last 90 days"  
-"Generate trading signals for Ethereum"
-"What are the risk metrics for my crypto portfolio?"
-"Compare technical strength between top 10 altcoins"
+# Raw data access requiring paid API:
+"Get raw technical data for Bitcoin"
+"Show me Bitcoin's raw price history over the last 90 days"  
+"Get raw historical data for Ethereum"
+"Get raw market dominance data for analysis"
+"Compare raw historical data for top 10 altcoins"
 ```
 
 ## 💡 **Cost Optimization**
